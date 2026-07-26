@@ -225,6 +225,14 @@ class OptimizationLoop:
         # Export CSV
         self._export_csv()
 
+        # Export Modified IDF file snapshot
+        try:
+            from app.energyplus.idf_exporter import export_modified_idf
+
+            export_modified_idf(self.simulation_id)
+        except Exception as e:
+            logger.warning(f"Could not export modified IDF file: {e}")
+
         # Engine stats
         if self._engine:
             stats = self._engine.get_stats()
