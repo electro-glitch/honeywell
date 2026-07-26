@@ -12,6 +12,9 @@ build/
 .env
 outputs/
 data/eco_loop.db
+*.db-journal
+*.db-wal
+*.db-shm
 *.log
 *.pdf
 .DS_Store
