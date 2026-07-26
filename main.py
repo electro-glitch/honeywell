@@ -276,7 +276,13 @@ def report(
         if not all_runs:
             console.print("[red]No simulations found. Run a simulation first.[/red]")
             raise typer.Exit(1)
-        simulation_id = all_runs[0].simulation_id
+            
+        opt_runs = [r for r in all_runs if r.mode == "optimized" and r.total_timesteps > 0]
+        if opt_runs:
+            simulation_id = opt_runs[0].simulation_id
+        else:
+            simulation_id = all_runs[0].simulation_id
+            
         console.print(f"Using simulation: [cyan]{simulation_id}[/cyan]")
 
     console.print(f"Generating [magenta]{format}[/magenta] report…")
