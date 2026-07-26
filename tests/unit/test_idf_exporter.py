@@ -7,7 +7,7 @@ from pathlib import Path
 from app.energyplus.idf_exporter import export_modified_idf
 
 
-def test_export_modified_idf_fallback(tmp_path: Path):
+def test_export_modified_idf_fallback(tmp_path: Path, test_config):
     non_existent_base = tmp_path / "non_existent_base.idf"
     out_file = tmp_path / "modified_test.idf"
     res = export_modified_idf(
@@ -17,7 +17,7 @@ def test_export_modified_idf_fallback(tmp_path: Path):
     assert "Eco-Loop AI-Optimized Simulation Run" in res.read_text(encoding="utf-8")
 
 
-def test_export_modified_idf_with_base_file(tmp_path: Path):
+def test_export_modified_idf_with_base_file(tmp_path: Path, test_config):
     base_idf = tmp_path / "base.idf"
     base_idf.write_text(
         """  Schedule:Compact,
