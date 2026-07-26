@@ -6,12 +6,12 @@ FROM python:3.12-slim AS base
 
 # System dependencies for WeasyPrint (PDF) and other libs
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libpangoft2-1.0-0 \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-2.0-0 \
     libffi-dev \
     libcairo2 \
-    libpq-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
