@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  # ── Eco-Loop Application ──────────────────────────────────────────────────
+  eco-loop:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: eco-loop:latest
+    container_name: eco-loop-app
+    environment:
+      - SIMULATION_MODE=mock
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LLM_MODEL=llama3
+      - DATABASE_PATH=/app/data/eco_loop.db
+      - LOG_LEVEL=INFO
+    volumes:
+      - eco-loop-data:/app/data
+      - eco-loop-outputs:/app/outputs
+    depends_on:
+      - ollama
+    networks:
+      - eco-loop-net
+    command: ["compare", "--hours", "168"]
+
+  # ── Ollama LLM Server ──────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: eco-loop-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    networks:
+      - eco-loop-net
+    # Uncomment to use GPU:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ── Dashboard (optional, serves pre-generated HTML) ───────────────────────
+  dashboard:
+    image: nginx:alpine
+    container_name: eco-loop-dashboard
+    ports:
+      - "8080:80"
+    volumes:
+      - eco-loop-outputs:/usr/share/nginx/html:ro
+    depends_on:
+      - eco-loop
+    networks:
+      - eco-loop-net
+
+volumes:
+  eco-loop-data:
+  eco-loop-outputs:
+  ollama-models:
+
+networks:
+  eco-loop-net:
+    driver: bridge

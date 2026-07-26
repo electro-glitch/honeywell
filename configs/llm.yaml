@@ -1,0 +1,55 @@
+# ===================================================
+# Eco-Loop LLM Configuration
+# ===================================================
+
+llm:
+  # Provider: "ollama" (local) | "openai" (future)
+  provider: ollama
+  base_url: http://localhost:11434
+  # Available models: llama3, mistral, qwen2.5, llama3.2, phi3
+  model: llama3
+  # Inference parameters
+  temperature: 0.2
+  top_p: 0.9
+  max_tokens: 1024
+  # Timeout in seconds for LLM requests
+  timeout: 120
+
+  # Retry configuration (tenacity)
+  retry:
+    max_attempts: 3
+    wait_seconds: 2.0
+
+# Decision engine
+decision:
+  # How often to query the LLM (every N timesteps)
+  query_every_n_steps: 4
+  # If True, always query LLM regardless of metric changes
+  always_reason: false
+  # Threshold: only re-optimize if temperature drifts by this much (°C)
+  temp_drift_threshold: 0.5
+  # Keep last N decisions in memory
+  memory_size: 20
+
+# Few-shot examples for the LLM
+few_shot_examples:
+  - context: "Indoor temp 26°C, occupancy 80%, PMV +0.8, HVAC power 15kW"
+    decision:
+      cooling_setpoint: 23
+      heating_setpoint: 19
+      fan_speed: 0.8
+      reason: "High occupancy and warm conditions. Cooling setpoint reduced to improve comfort."
+
+  - context: "Indoor temp 21°C, occupancy 0%, PMV -0.3, HVAC power 8kW"
+    decision:
+      cooling_setpoint: 26
+      heating_setpoint: 18
+      fan_speed: 0.3
+      reason: "Unoccupied. Relaxing setpoints to save energy."
+
+  - context: "Indoor temp 23°C, occupancy 60%, PMV 0.0, HVAC power 10kW"
+    decision:
+      cooling_setpoint: 24
+      heating_setpoint: 20
+      fan_speed: 0.6
+      reason: "Comfortable conditions. Slight relaxation to reduce energy use."

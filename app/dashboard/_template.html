@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eco-Loop Building Dashboard</title>
+  <meta name="description" content="AI-powered building energy optimisation - Eco-Loop">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
+    :root{{--bg:#080c14;--surface:#0f1623;--card:#141a28;--border:rgba(255,255,255,0.07);--a1:#38bdf8;--a2:#34d399;--a3:#f472b6;--opt:#34d399;--base:#818cf8;--warn:#fb923c;--danger:#f87171;--text:#e2e8f0;--muted:#94a3b8}}
+    html{{scroll-behavior:smooth}}
+    body{{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh}}
+    /* Hero */
+    .hero{{background:linear-gradient(135deg,#0b1628 0%,#0f2240 40%,#071a2e 70%,#091520 100%);padding:36px 48px 32px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}}
+    .hero::before{{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 80% at 60% 50%,rgba(56,189,248,0.08) 0%,transparent 65%),radial-gradient(ellipse 40% 60% at 85% 20%,rgba(52,211,153,0.06) 0%,transparent 55%);pointer-events:none}}
+    .hero-inner{{position:relative;z-index:1}}
+    .hero-logo{{display:flex;align-items:center;gap:14px;margin-bottom:8px}}
+    .hero-icon{{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--a1),var(--a2));display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 24px rgba(56,189,248,0.3)}}
+    .hero h1{{font-size:2rem;font-weight:700;letter-spacing:-0.02em;background:linear-gradient(90deg,var(--a1) 0%,var(--a2) 50%,var(--a1) 100%);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 4s linear infinite}}
+    @keyframes shimmer{{to{{background-position:-200% center}}}}
+    .hero-sub{{color:var(--muted);font-size:0.92rem;margin-top:4px}}
+    .hero-ids{{margin-top:12px;display:flex;gap:12px;flex-wrap:wrap}}
+    .hero-badge{{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:0.75rem;color:var(--muted);font-family:'Courier New',monospace}}
+    .hero-badge span{{color:var(--a1)}}
+    /* KPI row */
+    .kpi-row{{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;padding:24px 48px;background:var(--surface);border-bottom:1px solid var(--border)}}
+    @media(max-width:1100px){{.kpi-row{{grid-template-columns:repeat(3,1fr)}}}}
+    @media(max-width:700px){{.kpi-row{{grid-template-columns:repeat(2,1fr)}}}}
+    .kpi{{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 18px;text-align:center;transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden}}
+    .kpi::before{{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kpi-accent,var(--a2));border-radius:14px 14px 0 0}}
+    .kpi:hover{{transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,.4)}}
+    .kpi-val{{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em;color:var(--kpi-color,var(--a2))}}
+    .kpi-label{{font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:6px}}
+    /* Tabs */
+    .tabs-nav{{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 48px;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}}
+    .tab-btn{{padding:14px 22px;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);font-family:inherit;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}}
+    .tab-btn:hover{{color:var(--text)}}
+    .tab-btn.active{{color:var(--a1);border-bottom-color:var(--a1)}}
+    .tab-panel{{display:none;padding:32px 48px 48px}}
+    .tab-panel.active{{display:block}}
+    /* Layout */
+    .grid-2{{display:grid;grid-template-columns:1fr 1fr;gap:20px}}
+    @media(max-width:900px){{.grid-2{{grid-template-columns:1fr}}}}
+    .sec{{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:16px;margin-top:28px;display:flex;align-items:center;gap:10px}}
+    .sec::after{{content:'';flex:1;height:1px;background:var(--border)}}
+    .card{{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:border-color .2s}}
+    .card:hover{{border-color:rgba(56,189,248,.2)}}
+    /* Comparison table */
+    .stats-table{{width:100%;border-collapse:collapse;font-size:.875rem}}
+    .stats-table th{{background:var(--card);color:var(--muted);font-weight:500;text-transform:uppercase;font-size:.7rem;letter-spacing:.07em;padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}}
+    .stats-table td{{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text)}}
+    .stats-table tr:last-child td{{border-bottom:none}}
+    .stats-table tr:hover td{{background:rgba(255,255,255,.02)}}
+    .val-opt{{color:var(--opt);font-weight:600}}
+    .val-base{{color:var(--base)}}
+    .val-pos{{color:var(--a2);font-weight:600}}
+    .val-neg{{color:var(--danger);font-weight:600}}
+    /* Decisions */
+    .dtbl{{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow-x:auto;margin-top:8px}}
+    .dtbl table{{width:100%;border-collapse:collapse;font-size:.8rem}}
+    .dtbl th{{background:var(--card);color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em;font-size:.68rem;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}}
+    .dtbl td{{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text);white-space:nowrap}}
+    .dtbl tr:last-child td{{border-bottom:none}}
+    .badge{{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.68rem;font-weight:600;letter-spacing:.04em}}
+    .badge-ok{{background:rgba(52,211,153,.15);color:var(--opt)}}
+    .badge-warn{{background:rgba(251,146,60,.15);color:var(--warn)}}
+    /* Footer */
+    .footer{{text-align:center;padding:28px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border)}}
+    .footer strong{{color:var(--a1)}}
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-logo">
+      <div class="hero-icon">&#127968;</div>
+      <h1>Eco-Loop Building Agents</h1>
+    </div>
+    <p class="hero-sub">AI-Powered HVAC Optimisation &mdash; EnergyPlus + Open-Source LLM + MCP</p>
+    <div class="hero-ids">
+      <div class="hero-badge">Optimised: <span>{opt_id}</span></div>
+      <div class="hero-badge">Baseline: <span>{base_id}</span></div>
+      <div class="hero-badge">Duration: <span>{duration}</span></div>
+      <div class="hero-badge">Generated: <span>{generated}</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi" style="--kpi-accent:var(--a2);--kpi-color:var(--a2)">
+    <div class="kpi-val" data-target="{kwh_saved}" data-dec="2" data-sfx=" kWh">0 kWh</div>
+    <div class="kpi-label">Energy Saved</div>
+  </div>
+  <div class="kpi" style="--kpi-accent:var(--a2);--kpi-color:var(--a2)">
+    <div class="kpi-val" data-target="{pct_saved}" data-dec="2" data-sfx="%">0%</div>
+    <div class="kpi-label">Energy Savings</div>
+  </div>
+  <div class="kpi" style="--kpi-accent:var(--a1);--kpi-color:var(--a1)">
+    <div class="kpi-val" data-target="{cost_saved}" data-dec="2" data-pfx="$">$0</div>
+    <div class="kpi-label">Cost Saved</div>
+  </div>
+  <div class="kpi" style="--kpi-accent:var(--a2);--kpi-color:var(--a2)">
+    <div class="kpi-val" data-target="{co2_saved}" data-dec="2" data-sfx=" kg CO2">0 kg</div>
+    <div class="kpi-label">Carbon Saved</div>
+  </div>
+  <div class="kpi" style="--kpi-accent:{violations_color};--kpi-color:{violations_color}">
+    <div class="kpi-val" data-target="{violations}" data-dec="0">{violations}</div>
+    <div class="kpi-label">Violations (Opt)</div>
+  </div>
+  <div class="kpi" style="--kpi-accent:{pmv_color};--kpi-color:{pmv_color}">
+    <div class="kpi-val" data-target="{avg_pmv}" data-dec="2">{avg_pmv}</div>
+    <div class="kpi-label">Avg PMV (Opt)</div>
+  </div>
+</div>
+
+<nav class="tabs-nav">
+  <button class="tab-btn active" onclick="showTab('overview',this)">&#128202; Overview</button>
+  <button class="tab-btn" onclick="showTab('energy',this)">&#9889; Energy</button>
+  <button class="tab-btn" onclick="showTab('comfort',this)">&#127777; Thermal Comfort</button>
+  <button class="tab-btn" onclick="showTab('ops',this)">&#127963; Operations</button>
+  <button class="tab-btn" onclick="showTab('ai',this)">&#129302; AI Decisions</button>
+</nav>
+
+<div id="tab-overview" class="tab-panel active">
+  <div class="sec">Savings Summary</div>
+  <div class="grid-2">
+    <div class="card"><div id="c-savings" style="height:280px"></div></div>
+    <div class="card"><div id="c-hourly" style="height:340px"></div></div>
+  </div>
+  <div class="sec">Comparison Table</div>
+  <div class="card" style="overflow-x:auto;padding:0">
+    <table class="stats-table">
+      <thead><tr><th>Metric</th><th>Baseline</th><th>Optimised</th><th>Delta</th></tr></thead>
+      <tbody>{comparison_rows}</tbody>
+    </table>
+  </div>
+  <div class="sec">Total Metric Comparison</div>
+  <div class="grid-2">
+    <div class="card"><div id="c-bar-energy" style="height:160px"></div></div>
+    <div class="card"><div id="c-bar-cost" style="height:160px"></div></div>
+    <div class="card"><div id="c-bar-carbon" style="height:160px"></div></div>
+    <div class="card"><div id="c-bar-viol" style="height:160px"></div></div>
+  </div>
+</div>
+
+<div id="tab-energy" class="tab-panel">
+  <div class="sec">Cumulative Energy</div>
+  <div class="grid-2">
+    <div class="card"><div id="c-energy" style="height:380px"></div></div>
+    <div class="card"><div id="c-carbon" style="height:380px"></div></div>
+  </div>
+  <div class="sec">Energy Breakdown</div>
+  <div class="card"><div id="c-breakdown" style="height:360px"></div></div>
+</div>
+
+<div id="tab-comfort" class="tab-panel">
+  <div class="sec">Temperature</div>
+  <div class="card"><div id="c-temp" style="height:420px"></div></div>
+  <div class="sec">PMV Index</div>
+  <div class="card"><div id="c-pmv" style="height:380px"></div></div>
+  <div class="sec">Comfort Violations</div>
+  <div class="card"><div id="c-viol" style="height:320px"></div></div>
+</div>
+
+<div id="tab-ops" class="tab-panel">
+  <div class="sec">HVAC Power</div>
+  <div class="card"><div id="c-hvac" style="height:360px"></div></div>
+  <div class="sec">Occupancy and CO2</div>
+  <div class="card"><div id="c-occ" style="height:360px"></div></div>
+</div>
+
+<div id="tab-ai" class="tab-panel">
+  <div class="sec">LLM Control Decisions</div>
+  <div class="dtbl">{decisions_table}</div>
+</div>
+
+<div class="footer">
+  <strong>Eco-Loop Building Agents v0.1.0</strong> &nbsp;&bull;&nbsp;
+  EnergyPlus + Open-Source LLM + Model Context Protocol
+</div>
+
+<script>
+function showTab(name,btn){{
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  setTimeout(()=>window.dispatchEvent(new Event('resize')),60);
+}}
+function animateKPIs(){{
+  document.querySelectorAll('.kpi-val[data-target]').forEach(el=>{{
+    const target=parseFloat(el.dataset.target)||0;
+    const dec=parseInt(el.dataset.dec)||0;
+    const pfx=el.dataset.pfx||''; const sfx=el.dataset.sfx||'';
+    const dur=1400; const steps=60; let step=0;
+    const t=setInterval(()=>{{
+      step++; const p=step/steps;
+      const ease=1-Math.pow(1-p,3);
+      el.textContent=pfx+(target*ease).toFixed(dec)+sfx;
+      if(step>=steps){{clearInterval(t);el.textContent=pfx+target.toFixed(dec)+sfx;}}
+    }},dur/steps);
+  }});
+}}
+const pCfg={{responsive:true,displayModeBar:true,displaylogo:false,modeBarButtonsToRemove:['lasso2d','select2d']}};
+function rc(id,f){{try{{Plotly.newPlot(id,f.data,f.layout,pCfg);}}catch(e){{console.error(id,e);}}}}
+rc('c-savings',{c_savings});
+rc('c-hourly',{c_hourly});
+rc('c-bar-energy',{c_bar_energy});
+rc('c-bar-cost',{c_bar_cost});
+rc('c-bar-carbon',{c_bar_carbon});
+rc('c-bar-viol',{c_bar_viol});
+rc('c-energy',{c_energy});
+rc('c-carbon',{c_carbon});
+rc('c-breakdown',{c_breakdown});
+rc('c-temp',{c_temp});
+rc('c-pmv',{c_pmv});
+rc('c-viol',{c_viol});
+rc('c-hvac',{c_hvac});
+rc('c-occ',{c_occ});
+window.addEventListener('resize',()=>{{
+  document.querySelectorAll('.tab-panel.active [id^="c-"]').forEach(el=>Plotly.relayout(el.id,{{autosize:true}}));
+}});
+setTimeout(animateKPIs,300);
+</script>
+</body>
+</html>

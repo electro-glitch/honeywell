@@ -1,0 +1,88 @@
+# ===================================================
+# Eco-Loop Simulation Configuration
+# ===================================================
+
+simulation:
+  # "mock" | "energyplus"
+  mode: energyplus
+  # Number of timesteps per hour (EnergyPlus standard)
+  timesteps_per_hour: 4
+  # Total simulation hours (8760 = full year, 4380 = 6 months, 168 = 1 week)
+  total_hours: 168
+  # IDF file path (relative to project root)
+  idf_file: data/idf/ZoneCoupledKivaRefBldgMediumOffice.idf
+  # Weather file path
+  epw_file: data/weather/IND_DL_New.Delhi-Gandhi.Intl.AP.421810_TMYx.2004-2018.epw
+  # EnergyPlus installation directory
+  energyplus_dir: C:/EnergyPlusV26-1-0
+
+# HVAC control constraints
+hvac:
+  cooling_setpoint:
+    min: 18.0
+    max: 28.0
+    default: 24.0
+  heating_setpoint:
+    min: 15.0
+    max: 28.0
+    default: 20.0
+  fan_speed:
+    min: 0.0
+    max: 1.0
+    default: 0.7
+  airflow:
+    min: 0.0
+    max: 10.0  # m³/s
+    default: 0.5
+
+# Comfort constraints
+comfort:
+  pmv_min: -0.5
+  pmv_max: 0.5
+  temp_min_c: 22.0
+  temp_max_c: 25.0
+  co2_max_ppm: 1000.0
+  humidity_min: 30.0
+  humidity_max: 70.0
+
+# Occupancy schedule (hour → fraction of max occupancy)
+occupancy:
+  schedule:
+    0: 0.0
+    1: 0.0
+    2: 0.0
+    3: 0.0
+    4: 0.0
+    5: 0.0
+    6: 0.1
+    7: 0.5
+    8: 0.9
+    9: 1.0
+    10: 1.0
+    11: 1.0
+    12: 0.7
+    13: 0.9
+    14: 1.0
+    15: 1.0
+    16: 0.8
+    17: 0.5
+    18: 0.2
+    19: 0.1
+    20: 0.0
+    21: 0.0
+    22: 0.0
+    23: 0.0
+
+# Energy pricing ($/kWh, TOU tariff)
+pricing:
+  off_peak: 0.08
+  mid_peak: 0.14
+  on_peak: 0.22
+  peak_hours: [9, 10, 11, 17, 18, 19]
+  mid_peak_hours: [7, 8, 12, 13, 14, 15, 16]
+
+# Carbon intensity (gCO2/kWh, region average)
+carbon:
+  intensity_g_per_kwh: 386.0
+  # If true, use real-time API
+  realtime_enabled: false

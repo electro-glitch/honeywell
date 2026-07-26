@@ -1,0 +1,42 @@
+# ===================================================
+# Eco-Loop Application Settings
+# ===================================================
+
+app:
+  name: "Eco-Loop Building Agents"
+  version: "0.1.0"
+  environment: development  # development | production
+
+logging:
+  level: INFO  # DEBUG | INFO | WARNING | ERROR
+  file: outputs/eco_loop.log
+  rotation: "10 MB"
+  retention: "30 days"
+
+database:
+  path: data/eco_loop.db
+  # Maximum rows before archiving old data
+  max_metrics_rows: 100000
+
+mcp:
+  host: "127.0.0.1"
+  port: 8765
+  transport: stdio  # stdio | sse
+
+dashboard:
+  host: "127.0.0.1"
+  port: 8050
+  # Auto-open browser when dashboard starts
+  auto_open: true
+
+output:
+  dir: outputs
+  reports_dir: outputs/reports
+  plots_dir: outputs/plots
+  baseline_csv: outputs/baseline.csv
+  optimized_csv: outputs/optimized.csv
+  comparison_csv: outputs/comparison.csv
+  dashboard_html: outputs/dashboard.html
+  report_md: outputs/reports/report.md
+  report_html: outputs/reports/report.html
+  report_pdf: outputs/reports/report.pdf
