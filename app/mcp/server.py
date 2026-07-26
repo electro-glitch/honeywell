@@ -17,9 +17,10 @@ from typing import Any
 from loguru import logger
 
 try:
+    from mcp import types as mcp_types
     from mcp.server import Server
     from mcp.server.stdio import stdio_server
-    from mcp import types as mcp_types
+
     MCP_AVAILABLE = True
 except ImportError:
     MCP_AVAILABLE = False
@@ -205,9 +206,7 @@ def create_mcp_app() -> Any:
         ]
 
     @server.call_tool()
-    async def call_tool(
-        name: str, arguments: dict
-    ) -> list[mcp_types.TextContent]:
+    async def call_tool(name: str, arguments: dict) -> list[mcp_types.TextContent]:
         logger.info(f"MCP call_tool: {name}({json.dumps(arguments, indent=2)})")
 
         result = _dispatch_tool(name, arguments)
@@ -220,9 +219,7 @@ def create_mcp_app() -> Any:
 def _dispatch_tool(name: str, arguments: dict) -> dict:
     """Route tool call to implementation function."""
     dispatch: dict[str, Any] = {
-        "read_latest_metrics": lambda a: t.read_latest_metrics(
-            simulation_id=a["simulation_id"]
-        ),
+        "read_latest_metrics": lambda a: t.read_latest_metrics(simulation_id=a["simulation_id"]),
         "read_energy_history": lambda a: t.read_energy_history(
             simulation_id=a["simulation_id"],
             last_n=a.get("last_n", 96),
@@ -271,6 +268,7 @@ def _dispatch_tool(name: str, arguments: dict) -> dict:
 
 # ── Direct call interface (used by LLM client without MCP protocol) ──────────
 
+
 def call_tool_direct(name: str, arguments: dict) -> dict:
     """
     Call an MCP tool directly (bypasses MCP protocol overhead).
@@ -292,4 +290,5 @@ async def run_server_stdio() -> None:
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(run_server_stdio())

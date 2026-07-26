@@ -4,13 +4,10 @@ Pydantic schemas for MCP tool inputs and outputs.
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
-
 # ── Tool Input Schemas ────────────────────────────────────────────────────────
+
 
 class ReadLatestMetricsInput(BaseModel):
     simulation_id: str = Field(..., description="Simulation run identifier")
@@ -53,10 +50,11 @@ class GenerateDashboardInput(BaseModel):
 class SaveReportInput(BaseModel):
     simulation_id: str
     format: str = Field(default="markdown", description="'markdown' | 'html' | 'pdf' | 'csv'")
-    output_path: Optional[str] = None
+    output_path: str | None = None
 
 
 # ── Tool Output Schemas ───────────────────────────────────────────────────────
+
 
 class LatestMetricsOutput(BaseModel):
     simulation_id: str

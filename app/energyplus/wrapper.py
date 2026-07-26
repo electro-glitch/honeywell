@@ -10,16 +10,13 @@ to the mock implementation gracefully.
 
 from __future__ import annotations
 
-import sys
-import time
-import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 
 from loguru import logger
 
-from app.config import get_config, SimulationConfig
+from app.config import SimulationConfig, get_config
 
 
 class SimulationState:
@@ -118,6 +115,7 @@ class BaseSimulation(ABC):
 
 # ── Real EnergyPlus Wrapper ──────────────────────────────────────────────────
 
+
 class EnergyPlusWrapper(BaseSimulation):
     """
     Wraps the EnergyPlus Python API (pyenergyplus).
@@ -142,24 +140,29 @@ class EnergyPlusWrapper(BaseSimulation):
         """Parse IDF to extract zone names from Thermostat objects."""
         zones = []
         try:
-            with open(self._idf_path, 'r', encoding='utf-8') as f:
+            with open(self._idf_path, encoding="utf-8") as f:
                 content = f.read()
             import re
-            matches = re.finditer(r'ZoneControl:Thermostat,\s*([^,\r\n]+) Thermostat\b', content, re.IGNORECASE)
+
+            matches = re.finditer(
+                r"ZoneControl:Thermostat,\s*([^,\r\n]+) Thermostat\b", content, re.IGNORECASE
+            )
             for m in matches:
                 z = m.group(1).strip()
                 if z not in zones:
                     zones.append(z)
             if not zones:
                 # Fallback: parse Zone, objects but skip plenums (no thermostats)
-                matches = re.finditer(r'^\s*Zone,\s*([^,\r\n]+),', content, re.MULTILINE | re.IGNORECASE)
+                matches = re.finditer(
+                    r"^\s*Zone,\s*([^,\r\n]+),", content, re.MULTILINE | re.IGNORECASE
+                )
                 for m in matches:
                     z = m.group(1).strip()
                     if z not in zones and "plenum" not in z.lower():
                         zones.append(z)
         except Exception as e:
             logger.warning(f"Failed to parse zones from IDF: {e}")
-            
+
         if not zones:
             zones = ["Zone 1"]
         return zones
@@ -169,9 +172,11 @@ class EnergyPlusWrapper(BaseSimulation):
         try:
             ep_dir = str(self._ep_dir)
             import sys
+
             if ep_dir not in sys.path:
                 sys.path.insert(0, ep_dir)
             from pyenergyplus.api import EnergyPlusAPI  # type: ignore[import]
+
             self._api = EnergyPlusAPI()
             logger.info("EnergyPlus Python API loaded successfully")
             return True
@@ -203,19 +208,25 @@ class EnergyPlusWrapper(BaseSimulation):
             api.exchange.request_variable(self._ep_state, "Zone Mean Air Temperature", zone)
             api.exchange.request_variable(self._ep_state, "Zone Air Relative Humidity", zone)
             api.exchange.request_variable(self._ep_state, "Zone Air CO2 Concentration", zone)
-        api.exchange.request_variable(self._ep_state, "Facility Total HVAC Electricity Demand Rate", "Whole Building")
-        api.exchange.request_variable(self._ep_state, "Zone Mechanical Ventilation Mass Flow Rate", "Whole Building")
+        api.exchange.request_variable(
+            self._ep_state, "Facility Total HVAC Electricity Demand Rate", "Whole Building"
+        )
+        api.exchange.request_variable(
+            self._ep_state, "Zone Mechanical Ventilation Mass Flow Rate", "Whole Building"
+        )
 
         # Build argument list
         args = [
-            "-w", str(self._epw_path.resolve()) if self._epw_path else "",
-            "-d", str(out_dir.resolve()),
+            "-w",
+            str(self._epw_path.resolve()) if self._epw_path else "",
+            "-d",
+            str(out_dir.resolve()),
             str(self._idf_path.resolve()),
         ]
 
         logger.info("Starting EnergyPlus simulation with args: " + " ".join(args))
         logger.info(f"Controlling zones: {self._zones}")
-        
+
         exit_code = api.runtime.run_energyplus(self._ep_state, args)
         self.state.is_running = False
 
@@ -241,28 +252,32 @@ class EnergyPlusWrapper(BaseSimulation):
                 for zone in self._zones:
                     c_key = f"cool_sp_{zone}"
                     h_key = f"heat_sp_{zone}"
-                    
+
                     c_handle = self._handles.get(c_key, -1)
                     h_handle = self._handles.get(h_key, -1)
-                    
+
                     if c_handle < 0:
                         c_handle = self._api.exchange.get_actuator_handle(
                             ep_state, "Zone Temperature Control", "Cooling Setpoint", zone
                         )
                         if c_handle >= 0:
                             self._handles[c_key] = c_handle
-                            
+
                     if h_handle < 0:
                         h_handle = self._api.exchange.get_actuator_handle(
                             ep_state, "Zone Temperature Control", "Heating Setpoint", zone
                         )
                         if h_handle >= 0:
                             self._handles[h_key] = h_handle
-                    
+
                     if c_handle >= 0:
-                        self._api.exchange.set_actuator_value(ep_state, c_handle, self.state.cooling_setpoint)
+                        self._api.exchange.set_actuator_value(
+                            ep_state, c_handle, self.state.cooling_setpoint
+                        )
                     if h_handle >= 0:
-                        self._api.exchange.set_actuator_value(ep_state, h_handle, self.state.heating_setpoint)
+                        self._api.exchange.set_actuator_value(
+                            ep_state, h_handle, self.state.heating_setpoint
+                        )
         except Exception as e:
             logger.debug(f"Actuator application skipped: {e}")
 
@@ -279,7 +294,7 @@ class EnergyPlusWrapper(BaseSimulation):
                 handle = self._api.exchange.get_variable_handle(ep_state, var_name, zone)
                 if handle >= 0:
                     self._handles[key] = handle
-                    
+
             if handle >= 0:
                 total += self._api.exchange.get_variable_value(ep_state, handle)
                 count += 1
@@ -320,13 +335,15 @@ class EnergyPlusWrapper(BaseSimulation):
                 )
                 if handle >= 0:
                     self._handles["hvac_power"] = handle
-                    
+
             if handle >= 0:
                 return self._api.exchange.get_variable_value(ep_state, handle) / 1000.0
         except Exception:
             pass
-            
-        avg_flow = self._get_variable_avg(ep_state, "Zone Mechanical Ventilation Mass Flow Rate", 0.0)
+
+        avg_flow = self._get_variable_avg(
+            ep_state, "Zone Mechanical Ventilation Mass Flow Rate", 0.0
+        )
         return avg_flow * 1.5 * len(self._zones)
 
     def get_humidity(self) -> float:
@@ -360,7 +377,9 @@ class EnergyPlusWrapper(BaseSimulation):
     def set_fan_speed(self, fraction: float) -> None:
         self.state.fan_speed = fraction
 
+
 # ── Mock Simulation (no EnergyPlus required) ─────────────────────────────────
+
 
 class MockSimulation(BaseSimulation):
     """
@@ -424,16 +443,16 @@ class MockSimulation(BaseSimulation):
         day = step * dt_hours / 24.0
         seasonal_drift = 2.0 * math.sin(2 * math.pi * day / 7.0)
         self._outdoor_temp = (
-            16.0                                              # mean outdoor temp
-            + seasonal_drift                                  # weekly variation
-            + 8.0 * math.sin(math.pi * (h - 6) / 12.0)      # daily cycle peak at 14:00
+            16.0  # mean outdoor temp
+            + seasonal_drift  # weekly variation
+            + 8.0 * math.sin(math.pi * (h - 6) / 12.0)  # daily cycle peak at 14:00
         )
 
         # Occupancy-driven heat gains
         occ = self.get_occupancy_fraction()
         solar_gain = max(0.0, 3.0 * math.sin(math.pi * (h - 6) / 12.0))
-        occupancy_gain = occ * 1.2   # internal heat from people (kW equiv)
-        equipment_gain = occ * 0.6   # equipment loads
+        occupancy_gain = occ * 1.2  # internal heat from people (kW equiv)
+        _equipment_gain = occ * 0.6  # equipment loads
 
         # HVAC control — stronger authority so thermostat is effective
         cool_sp = self.state.cooling_setpoint
@@ -497,10 +516,30 @@ class MockSimulation(BaseSimulation):
         # Use hardcoded schedule approximation
         h = self._hour
         schedule = {
-            0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.05,
-            6: 0.1, 7: 0.5, 8: 0.9, 9: 1.0, 10: 1.0, 11: 1.0,
-            12: 0.7, 13: 0.9, 14: 1.0, 15: 1.0, 16: 0.8, 17: 0.5,
-            18: 0.2, 19: 0.1, 20: 0.05, 21: 0.0, 22: 0.0, 23: 0.0,
+            0: 0.0,
+            1: 0.0,
+            2: 0.0,
+            3: 0.0,
+            4: 0.0,
+            5: 0.05,
+            6: 0.1,
+            7: 0.5,
+            8: 0.9,
+            9: 1.0,
+            10: 1.0,
+            11: 1.0,
+            12: 0.7,
+            13: 0.9,
+            14: 1.0,
+            15: 1.0,
+            16: 0.8,
+            17: 0.5,
+            18: 0.2,
+            19: 0.1,
+            20: 0.05,
+            21: 0.0,
+            22: 0.0,
+            23: 0.0,
         }
         return schedule.get(h, 0.0)
 
@@ -521,7 +560,8 @@ class MockSimulation(BaseSimulation):
 
 # ── Factory ───────────────────────────────────────────────────────────────────
 
-def create_simulation(config: Optional[SimulationConfig] = None) -> BaseSimulation:
+
+def create_simulation(config: SimulationConfig | None = None) -> BaseSimulation:
     """
     Factory function.  Returns the appropriate simulation backend based on config.
 

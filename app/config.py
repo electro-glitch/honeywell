@@ -15,7 +15,6 @@ from typing import Any
 import yaml
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from pydantic_settings import BaseSettings
 
 # Load .env if present
 load_dotenv()
@@ -32,6 +31,7 @@ def _load_yaml(path: Path) -> dict[str, Any]:
 
 
 # ── Sub-models ──────────────────────────────────────────────────────────────
+
 
 class HVACConstraints(BaseModel):
     cooling_setpoint_min: float = 18.0
@@ -121,9 +121,7 @@ class PricingConfig(BaseModel):
     mid_peak: float = 0.14
     on_peak: float = 0.22
     peak_hours: list[int] = Field(default_factory=lambda: [9, 10, 11, 17, 18, 19])
-    mid_peak_hours: list[int] = Field(
-        default_factory=lambda: [7, 8, 12, 13, 14, 15, 16]
-    )
+    mid_peak_hours: list[int] = Field(default_factory=lambda: [7, 8, 12, 13, 14, 15, 16])
 
 
 class CarbonConfig(BaseModel):
@@ -193,9 +191,7 @@ def get_config() -> AppConfig:
     sim_mode = os.getenv("SIMULATION_MODE", sim_section.get("mode", "energyplus"))
     ep_dir = os.getenv("ENERGYPLUS_DIR", sim_section.get("energyplus_dir", ""))
     llm_model = os.getenv("LLM_MODEL", llm_section.get("model", "llama3"))
-    ollama_url = os.getenv(
-        "OLLAMA_BASE_URL", llm_section.get("base_url", "http://localhost:11434")
-    )
+    ollama_url = os.getenv("OLLAMA_BASE_URL", llm_section.get("base_url", "http://localhost:11434"))
     db_path = os.getenv("DATABASE_PATH", db_section.get("path", "data/eco_loop.db"))
 
     hvac = HVACConstraints(
@@ -213,9 +209,17 @@ def get_config() -> AppConfig:
         airflow_default=hvac_section.get("airflow", {}).get("default", 0.5),
     )
 
-    comfort = ComfortConstraints(**{
-        k: comfort_section[k] for k in comfort_section if k in ComfortConstraints.model_fields
-    }) if comfort_section else ComfortConstraints()
+    comfort = (
+        ComfortConstraints(
+            **{
+                k: comfort_section[k]
+                for k in comfort_section
+                if k in ComfortConstraints.model_fields
+            }
+        )
+        if comfort_section
+        else ComfortConstraints()
+    )
 
     simulation = SimulationConfig(
         mode=sim_mode,
@@ -266,11 +270,11 @@ def get_config() -> AppConfig:
             port=mcp_section.get("port", 8765),
             transport=mcp_section.get("transport", "stdio"),
         ),
-        output=OutputConfig(**{
-            k: output_section[k]
-            for k in output_section
-            if k in OutputConfig.model_fields
-        }) if output_section else OutputConfig(),
+        output=OutputConfig(
+            **{k: output_section[k] for k in output_section if k in OutputConfig.model_fields}
+        )
+        if output_section
+        else OutputConfig(),
         logging=LoggingConfig(
             level=os.getenv("LOG_LEVEL", logging_section.get("level", "INFO")),
             file=os.getenv("LOG_FILE", logging_section.get("file", "outputs/eco_loop.log")),

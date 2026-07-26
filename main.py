@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -55,6 +54,7 @@ def _init(log_level: str = "INFO") -> None:
 
 # ── baseline ─────────────────────────────────────────────────────────────────
 
+
 @app.command()
 def baseline(
     hours: int = typer.Option(168, help="Simulation duration in hours (168 = 1 week)"),
@@ -69,6 +69,7 @@ def baseline(
     _init(log_level)
 
     from app.config import get_config
+
     cfg = get_config()
     cfg.simulation.mode = mode
     cfg.simulation.total_hours = hours
@@ -84,6 +85,7 @@ def baseline(
     )
 
     from app.controllers.control_loop import OptimizationLoop
+
     loop = OptimizationLoop(mode="baseline", config=cfg)
     sim_id = loop.run()
 
@@ -93,13 +95,14 @@ def baseline(
 
 # ── optimize ──────────────────────────────────────────────────────────────────
 
+
 @app.command()
 def optimize(
     hours: int = typer.Option(168, help="Simulation duration in hours"),
     mode: str = typer.Option("energyplus", help="Simulation backend: 'mock' or 'energyplus'"),
     model: str = typer.Option("", help="LLM model name (e.g. llama3, mistral, qwen2.5)"),
     log_level: str = typer.Option("INFO", help="Log level"),
-    simulation_id: Optional[str] = typer.Option(None, help="Custom simulation ID"),
+    simulation_id: str | None = typer.Option(None, help="Custom simulation ID"),
 ) -> None:
     """
     [bold green]Run LLM-driven HVAC optimization[/bold green].
@@ -110,6 +113,7 @@ def optimize(
     _init(log_level)
 
     from app.config import get_config
+
     cfg = get_config()
     cfg.simulation.mode = mode
     cfg.simulation.total_hours = hours
@@ -129,6 +133,7 @@ def optimize(
     )
 
     from app.controllers.control_loop import OptimizationLoop
+
     loop = OptimizationLoop(mode="optimized", simulation_id=simulation_id, config=cfg)
     sim_id = loop.run()
 
@@ -137,6 +142,7 @@ def optimize(
 
 
 # ── compare ───────────────────────────────────────────────────────────────────
+
 
 @app.command()
 def compare(
@@ -153,6 +159,7 @@ def compare(
     _init(log_level)
 
     from app.config import get_config
+
     cfg = get_config()
     cfg.simulation.mode = mode
     cfg.simulation.total_hours = hours
@@ -170,19 +177,21 @@ def compare(
     )
 
     from app.controllers.control_loop import run_comparison
+
     baseline_id, optimized_id = run_comparison(cfg)
 
-    console.print(f"\n[green]OK: Comparison complete.[/green]")
+    console.print("\n[green]OK: Comparison complete.[/green]")
     console.print(f"Baseline ID:  {baseline_id}")
     console.print(f"Optimized ID: {optimized_id}")
 
 
 # ── dashboard ─────────────────────────────────────────────────────────────────
 
+
 @app.command()
 def dashboard(
-    simulation_id: Optional[str] = typer.Option(None, help="Simulation ID to visualize"),
-    baseline_id: Optional[str] = typer.Option(None, help="Baseline simulation ID"),
+    simulation_id: str | None = typer.Option(None, help="Simulation ID to visualize"),
+    baseline_id: str | None = typer.Option(None, help="Baseline simulation ID"),
     output: str = typer.Option("outputs/dashboard.html", help="Output HTML file path"),
     open_browser: bool = typer.Option(True, help="Auto-open browser after generation"),
     log_level: str = typer.Option("INFO", help="Log level"),
@@ -198,7 +207,9 @@ def dashboard(
 
     all_runs = list_simulation_runs()
     if not all_runs:
-        console.print("[red]No simulations found in database. Run 'baseline' or 'optimize' first.[/red]")
+        console.print(
+            "[red]No simulations found in database. Run 'baseline' or 'optimize' first.[/red]"
+        )
         raise typer.Exit(1)
 
     # Smart-resolve: find the best-matching optimized + baseline pair
@@ -215,7 +226,9 @@ def dashboard(
                 if valid_bases:
                     best_base = max(valid_bases, key=lambda r: r.total_energy_kwh)
                 else:
-                    best_base = min(base_runs, key=lambda r: abs(r.total_timesteps - opt_run.total_timesteps))
+                    best_base = min(
+                        base_runs, key=lambda r: abs(r.total_timesteps - opt_run.total_timesteps)
+                    )
                 baseline_id = best_base.simulation_id
         else:
             # Fall back to most recent run of any mode
@@ -228,6 +241,7 @@ def dashboard(
     console.print(f"Generating dashboard for: [cyan]{simulation_id}[/cyan]")
 
     from app.dashboard.dashboard import generate_dashboard as _gen
+
     out_path = _gen(
         simulation_id=simulation_id,
         baseline_id=baseline_id,
@@ -240,11 +254,12 @@ def dashboard(
 
 # ── report ────────────────────────────────────────────────────────────────────
 
+
 @app.command()
 def report(
-    simulation_id: Optional[str] = typer.Option(None, help="Simulation ID"),
+    simulation_id: str | None = typer.Option(None, help="Simulation ID"),
     format: str = typer.Option("markdown", help="Output format: markdown|html|pdf|csv"),
-    output: Optional[str] = typer.Option(None, help="Output file path override"),
+    output: str | None = typer.Option(None, help="Output file path override"),
     log_level: str = typer.Option("INFO", help="Log level"),
 ) -> None:
     """
@@ -267,12 +282,14 @@ def report(
     console.print(f"Generating [magenta]{format}[/magenta] report…")
 
     from app.dashboard.reporter import generate_report
+
     out_path = generate_report(simulation_id=simulation_id, fmt=format, output_path=output)
 
     console.print(f"\n[green]OK: Report saved: {out_path}[/green]")
 
 
 # ── status ────────────────────────────────────────────────────────────────────
+
 
 @app.command()
 def status(
@@ -284,6 +301,7 @@ def status(
     _init()
 
     from app.database.repository import list_simulation_runs
+
     runs = list_simulation_runs()[:limit]
 
     if not runs:
@@ -319,6 +337,7 @@ def status(
 
 # ── mcp-server ────────────────────────────────────────────────────────────────
 
+
 @app.command("mcp-server")
 def mcp_server() -> None:
     """
@@ -327,9 +346,11 @@ def mcp_server() -> None:
     Used when integrating with an external LLM client via the MCP protocol.
     """
     import asyncio
+
     _init()
     console.print("[cyan]Starting Eco-Loop MCP Server (stdio)…[/cyan]")
     from app.mcp.server import run_server_stdio
+
     asyncio.run(run_server_stdio())
 
 

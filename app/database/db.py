@@ -7,9 +7,9 @@ Uses aiosqlite for async I/O and synchronous sqlite3 for sync contexts.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import AsyncGenerator, Generator
 
 import aiosqlite
 from loguru import logger

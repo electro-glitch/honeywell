@@ -7,15 +7,12 @@ Supports both synchronous (for EnergyPlus callback thread) and async.
 
 from __future__ import annotations
 
-import json
-import sqlite3
 from datetime import datetime
-from typing import Optional
 
 import pandas as pd
 from loguru import logger
 
-from app.database.db import get_db_path, get_sync_db
+from app.database.db import get_sync_db
 from app.database.models import (
     BuildingMetrics,
     ComfortViolation,
@@ -23,8 +20,8 @@ from app.database.models import (
     SimulationRun,
 )
 
-
 # ── Simulation Runs ──────────────────────────────────────────────────────────
+
 
 def create_simulation_run(run: SimulationRun) -> None:
     """Insert a new simulation run record."""
@@ -84,7 +81,7 @@ def update_simulation_run(run: SimulationRun) -> None:
     logger.debug(f"Updated simulation run {run.simulation_id}")
 
 
-def get_simulation_run(simulation_id: str) -> Optional[SimulationRun]:
+def get_simulation_run(simulation_id: str) -> SimulationRun | None:
     """Fetch a simulation run by ID."""
     with get_sync_db() as conn:
         row = conn.execute(
@@ -102,9 +99,7 @@ def get_simulation_run(simulation_id: str) -> Optional[SimulationRun]:
 def list_simulation_runs() -> list[SimulationRun]:
     """List all simulation runs ordered by start time."""
     with get_sync_db() as conn:
-        rows = conn.execute(
-            "SELECT * FROM simulation_runs ORDER BY started_at DESC"
-        ).fetchall()
+        rows = conn.execute("SELECT * FROM simulation_runs ORDER BY started_at DESC").fetchall()
     result = []
     for row in rows:
         d = dict(row)
@@ -116,6 +111,7 @@ def list_simulation_runs() -> list[SimulationRun]:
 
 
 # ── Building Metrics ─────────────────────────────────────────────────────────
+
 
 def insert_metrics(m: BuildingMetrics) -> None:
     """Insert one timestep of building metrics."""
@@ -134,20 +130,35 @@ def insert_metrics(m: BuildingMetrics) -> None:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
-                m.simulation_id, m.mode, m.timestep, m.timestamp.isoformat(),
-                m.indoor_temp_c, m.outdoor_temp_c,
-                m.heating_setpoint_c, m.cooling_setpoint_c,
-                m.humidity_pct, m.pmv, m.ppd,
-                m.hvac_electricity_kwh, m.lighting_electricity_kwh, m.equipment_electricity_kwh,
+                m.simulation_id,
+                m.mode,
+                m.timestep,
+                m.timestamp.isoformat(),
+                m.indoor_temp_c,
+                m.outdoor_temp_c,
+                m.heating_setpoint_c,
+                m.cooling_setpoint_c,
+                m.humidity_pct,
+                m.pmv,
+                m.ppd,
+                m.hvac_electricity_kwh,
+                m.lighting_electricity_kwh,
+                m.equipment_electricity_kwh,
                 m.total_electricity_kwh,
-                m.occupancy_fraction, m.occupant_count, m.co2_ppm,
-                m.hvac_power_kw, m.fan_speed, m.airflow_m3s,
-                m.carbon_kg_co2, m.electricity_price_per_kwh, m.electricity_cost,
+                m.occupancy_fraction,
+                m.occupant_count,
+                m.co2_ppm,
+                m.hvac_power_kw,
+                m.fan_speed,
+                m.airflow_m3s,
+                m.carbon_kg_co2,
+                m.electricity_price_per_kwh,
+                m.electricity_cost,
             ),
         )
 
 
-def get_latest_metrics(simulation_id: str) -> Optional[BuildingMetrics]:
+def get_latest_metrics(simulation_id: str) -> BuildingMetrics | None:
     """Return the most recent metrics row for a simulation."""
     with get_sync_db() as conn:
         row = conn.execute(
@@ -218,6 +229,7 @@ def _row_to_metrics(d: dict) -> BuildingMetrics:
 
 # ── Control Decisions ────────────────────────────────────────────────────────
 
+
 def insert_decision(decision: ControlDecision) -> None:
     """Save an LLM control decision."""
     with get_sync_db() as conn:
@@ -271,6 +283,7 @@ def _row_to_decision(d: dict) -> ControlDecision:
 
 # ── Comfort Violations ───────────────────────────────────────────────────────
 
+
 def insert_violation(v: ComfortViolation) -> None:
     """Record a comfort constraint violation."""
     with get_sync_db() as conn:
@@ -282,8 +295,13 @@ def insert_violation(v: ComfortViolation) -> None:
             VALUES (?,?,?,?,?,?,?)
             """,
             (
-                v.simulation_id, v.timestep, v.timestamp.isoformat(),
-                v.violation_type, v.actual_value, v.limit_value, v.severity,
+                v.simulation_id,
+                v.timestep,
+                v.timestamp.isoformat(),
+                v.violation_type,
+                v.actual_value,
+                v.limit_value,
+                v.severity,
             ),
         )
 
@@ -312,6 +330,7 @@ def get_violations_dataframe(simulation_id: str) -> pd.DataFrame:
 
 
 # ── Summary Stats ────────────────────────────────────────────────────────────
+
 
 def get_simulation_summary(simulation_id: str) -> dict:
     """Compute aggregate summary statistics for a simulation."""

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import pytest
-
 from app.database.models import BuildingMetrics, SimulationRun
 from app.database.repository import create_simulation_run, insert_metrics
 
@@ -51,6 +49,7 @@ class TestMCPTools:
 
     def test_read_latest_metrics_success(self, test_config):
         from app.mcp.tools import read_latest_metrics
+
         sim_id = "test_mcp_001"
         _seed_db(sim_id)
 
@@ -62,11 +61,13 @@ class TestMCPTools:
 
     def test_read_latest_metrics_not_found(self, test_config):
         from app.mcp.tools import read_latest_metrics
+
         result = read_latest_metrics("nonexistent_sim_xyz")
         assert "error" in result
 
     def test_read_energy_history(self, test_config):
         from app.mcp.tools import read_energy_history
+
         sim_id = "test_mcp_002"
         _seed_db(sim_id)
 
@@ -78,6 +79,7 @@ class TestMCPTools:
 
     def test_update_setpoint_no_active_sim(self, test_config):
         from app.mcp.tools import update_setpoint
+
         result = update_setpoint(
             simulation_id="no_active_sim",
             cooling_setpoint=23.0,
@@ -88,8 +90,8 @@ class TestMCPTools:
         assert "success" in result
 
     def test_update_setpoint_with_active_sim(self, test_config):
-        from app.mcp.tools import update_setpoint, register_simulation
         from app.energyplus.wrapper import MockSimulation, SimulationConfig
+        from app.mcp.tools import register_simulation, update_setpoint
 
         sim_config = SimulationConfig()
         mock_sim = MockSimulation(sim_config)
@@ -101,21 +103,25 @@ class TestMCPTools:
 
     def test_modify_schedule(self, test_config):
         from app.mcp.tools import modify_schedule
+
         result = modify_schedule("any_sim", hour=14, occupancy_fraction=0.5)
         assert result["success"] is True
         assert result["hour"] == 14
 
     def test_run_simulation_step(self, test_config):
         from app.mcp.tools import run_simulation_step
+
         result = run_simulation_step("any_sim", steps=5)
         assert result["steps_executed"] == 5
 
     def test_restart_simulation(self, test_config):
         from app.mcp.tools import restart_simulation
+
         result = restart_simulation("any_sim", mode="mock")
         assert result["success"] is True
 
     def test_dispatch_unknown_tool(self, test_config):
         from app.mcp.server import _dispatch_tool
+
         result = _dispatch_tool("nonexistent_tool", {})
         assert "error" in result

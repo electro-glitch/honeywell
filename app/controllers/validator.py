@@ -16,7 +16,6 @@ Rules:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from loguru import logger
 
@@ -48,7 +47,7 @@ class ControlValidator:
     ABS_AIRFLOW_MAX = 15.0
     MIN_DEADBAND = 2.0  # cooling must be at least 2°C above heating
 
-    def __init__(self, constraints: Optional[HVACConstraints] = None) -> None:
+    def __init__(self, constraints: HVACConstraints | None = None) -> None:
         self._c = constraints or get_config().simulation.hvac
 
     def validate_and_clamp(self, data: dict) -> tuple[dict, str]:
@@ -145,6 +144,8 @@ class ControlValidator:
         if fan < 0.0 or fan > 1.0:
             violations.append(f"fan_speed {fan} outside [0, 1]")
         if cool < heat + self.MIN_DEADBAND:
-            violations.append(f"dead band violation: cool-heat={cool-heat:.1f} < {self.MIN_DEADBAND}")
+            violations.append(
+                f"dead band violation: cool-heat={cool - heat:.1f} < {self.MIN_DEADBAND}"
+            )
 
         return len(violations) == 0, violations

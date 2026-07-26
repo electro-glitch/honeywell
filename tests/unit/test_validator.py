@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.controllers.validator import ControlValidator
 
 
@@ -57,8 +55,10 @@ class TestControlValidator:
 
     def test_negative_airflow_clamped(self):
         data = {
-            "cooling_setpoint": 24.0, "heating_setpoint": 20.0,
-            "fan_speed": 0.7, "airflow_m3s": -1.0,
+            "cooling_setpoint": 24.0,
+            "heating_setpoint": 20.0,
+            "fan_speed": 0.7,
+            "airflow_m3s": -1.0,
         }
         result, notes = self.v.validate_and_clamp(data)
         assert result["airflow_m3s"] == 0.0

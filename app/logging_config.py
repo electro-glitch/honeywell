@@ -23,12 +23,17 @@ def setup_logging(level: str = "INFO", log_file: str | None = None) -> None:
 
     # Ensure stderr can handle UTF-8 on Windows
     import io
-    _stderr = io.TextIOWrapper(
-        sys.stderr.buffer if hasattr(sys.stderr, 'buffer') else sys.stderr,
-        encoding='utf-8',
-        errors='replace',
-        line_buffering=True,
-    ) if hasattr(sys.stderr, 'buffer') else sys.stderr
+
+    _stderr = (
+        io.TextIOWrapper(
+            sys.stderr.buffer if hasattr(sys.stderr, "buffer") else sys.stderr,
+            encoding="utf-8",
+            errors="replace",
+            line_buffering=True,
+        )
+        if hasattr(sys.stderr, "buffer")
+        else sys.stderr
+    )
 
     logger.add(
         _stderr,

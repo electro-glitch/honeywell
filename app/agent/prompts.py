@@ -76,7 +76,7 @@ def build_decision_prompt(
     lines.append(f"- PMV (Comfort Index): {metrics.get('pmv', 'N/A')} (target: -0.5 to +0.5)")
     lines.append(f"- PPD (% Dissatisfied): {metrics.get('ppd', 'N/A')}%")
     lines.append(f"- CO₂ Concentration: {metrics.get('co2_ppm', 'N/A')} ppm")
-    lines.append(f"- Occupancy: {metrics.get('occupancy_fraction', 0)*100:.0f}%")
+    lines.append(f"- Occupancy: {metrics.get('occupancy_fraction', 0) * 100:.0f}%")
     lines.append("")
     lines.append("## Current HVAC State")
     lines.append(f"- Cooling Setpoint: {metrics.get('cooling_setpoint_c', 'N/A')}°C")
@@ -85,7 +85,9 @@ def build_decision_prompt(
     lines.append(f"- HVAC Power: {metrics.get('hvac_power_kw', 'N/A')} kW")
     lines.append("")
     lines.append("## Energy & Cost")
-    lines.append(f"- Total Electricity (this timestep): {metrics.get('total_electricity_kwh', 'N/A')} kWh")
+    lines.append(
+        f"- Total Electricity (this timestep): {metrics.get('total_electricity_kwh', 'N/A')} kWh"
+    )
     lines.append(f"- HVAC Electricity: {metrics.get('hvac_electricity_kwh', 'N/A')} kWh")
     lines.append(f"- Electricity Cost: ${metrics.get('electricity_cost', 'N/A'):.4f}")
     lines.append(f"- Carbon Emissions: {metrics.get('carbon_kg_co2', 'N/A')} kg CO₂")

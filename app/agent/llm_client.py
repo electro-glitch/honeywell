@@ -12,16 +12,10 @@ from __future__ import annotations
 import json
 import re
 import time
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 from loguru import logger
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_fixed,
-)
 
 from app.config import LLMConfig, get_config
 
@@ -35,7 +29,7 @@ class OllamaClient:
       GET  /api/tags     — list available models
     """
 
-    def __init__(self, config: Optional[LLMConfig] = None) -> None:
+    def __init__(self, config: LLMConfig | None = None) -> None:
         self.config = config or get_config().llm
         self.base_url = self.config.base_url.rstrip("/")
         self._client = httpx.Client(timeout=self.config.timeout)
@@ -187,13 +181,14 @@ def extract_json(text: str) -> dict:
 
 # ── Stub Client (when Ollama is not available) ────────────────────────────────
 
+
 class StubLLMClient:
     """
     Fallback LLM that returns rule-based decisions.
     Used when Ollama is not running.
     """
 
-    def __init__(self, config: Optional[LLMConfig] = None) -> None:
+    def __init__(self, config: LLMConfig | None = None) -> None:
         self.config = config or get_config().llm
         logger.warning(
             "Ollama not available — using StubLLMClient (rule-based decisions). "
@@ -216,7 +211,7 @@ class StubLLMClient:
             m = re.search(pattern, prompt)
             return float(m.group(1)) if m else default
 
-        indoor = _extract(r"Indoor Temperature: ([\d.]+)°C", 23.0)
+        _indoor = _extract(r"Indoor Temperature: ([\d.]+)°C", 23.0)
         pmv = _extract(r"PMV.*?: ([-\d.]+)", 0.0)
         occupancy = _extract(r"Occupancy: ([\d.]+)%", 50.0) / 100.0
         co2 = _extract(r"CO₂.*?: ([\d.]+) ppm", 500.0)
@@ -268,7 +263,7 @@ class StubLLMClient:
         pass
 
 
-def create_llm_client(config: Optional[LLMConfig] = None) -> OllamaClient | StubLLMClient:
+def create_llm_client(config: LLMConfig | None = None) -> OllamaClient | StubLLMClient:
     """
     Factory: create the appropriate LLM client.
     Returns OllamaClient if Ollama is running, otherwise StubLLMClient.

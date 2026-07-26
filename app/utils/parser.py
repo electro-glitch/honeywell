@@ -9,8 +9,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 from loguru import logger
@@ -60,7 +59,7 @@ def safe_int(value: Any, default: int = 0) -> int:
         return default
 
 
-def parse_llm_decision(text: str) -> Optional[dict]:
+def parse_llm_decision(text: str) -> dict | None:
     """
     Attempt to parse a JSON control decision from LLM text output.
     Handles markdown code blocks and partial JSON.
@@ -122,15 +121,19 @@ def compute_hourly_aggregates(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["hour"] = pd.to_datetime(df["timestamp"]).dt.floor("h")
 
-    agg = df.groupby("hour").agg(
-        total_energy_kwh=("total_electricity_kwh", "sum"),
-        avg_temp_c=("indoor_temp_c", "mean"),
-        avg_pmv=("pmv", "mean"),
-        avg_occupancy=("occupancy_fraction", "mean"),
-        total_carbon_kg=("carbon_kg_co2", "sum"),
-        total_cost=("electricity_cost", "sum"),
-        hvac_energy_kwh=("hvac_electricity_kwh", "sum"),
-        peak_hvac_kw=("hvac_power_kw", "max"),
-    ).reset_index()
+    agg = (
+        df.groupby("hour")
+        .agg(
+            total_energy_kwh=("total_electricity_kwh", "sum"),
+            avg_temp_c=("indoor_temp_c", "mean"),
+            avg_pmv=("pmv", "mean"),
+            avg_occupancy=("occupancy_fraction", "mean"),
+            total_carbon_kg=("carbon_kg_co2", "sum"),
+            total_cost=("electricity_cost", "sum"),
+            hvac_energy_kwh=("hvac_electricity_kwh", "sum"),
+            peak_hvac_kw=("hvac_power_kw", "max"),
+        )
+        .reset_index()
+    )
 
     return agg

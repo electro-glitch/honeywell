@@ -68,6 +68,7 @@ class ActuatorController:
     def reset_to_defaults(self) -> None:
         """Reset all actuators to safe default values."""
         from app.config import get_config
+
         cfg = get_config().simulation.hvac
         self._sim.set_cooling_setpoint(cfg.cooling_setpoint_default)
         self._sim.set_heating_setpoint(cfg.heating_setpoint_default)

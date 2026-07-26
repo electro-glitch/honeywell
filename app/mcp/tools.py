@@ -17,30 +17,18 @@ Tools:
 
 from __future__ import annotations
 
-import json
-from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 from loguru import logger
 
-from app.config import get_config
 from app.database import repository as repo
 from app.mcp.schemas import (
     DashboardOutput,
     EnergyHistoryPoint,
-    GenerateDashboardInput,
     LatestMetricsOutput,
-    ModifyScheduleInput,
-    ReadEnergyHistoryInput,
-    ReadLatestMetricsInput,
     ReportOutput,
-    RestartSimulationInput,
-    RunSimulationStepInput,
-    SaveReportInput,
     SetpointUpdateOutput,
     SimulationStepOutput,
-    UpdateSetpointInput,
 )
 
 # Registry of active simulations (simulation_id → simulation instance)
@@ -60,6 +48,7 @@ def unregister_simulation(simulation_id: str) -> None:
 
 
 # ── Tool 1: read_latest_metrics ───────────────────────────────────────────────
+
 
 def read_latest_metrics(simulation_id: str) -> dict:
     """
@@ -96,6 +85,7 @@ def read_latest_metrics(simulation_id: str) -> dict:
 
 
 # ── Tool 2: read_energy_history ───────────────────────────────────────────────
+
 
 def read_energy_history(simulation_id: str, last_n: int = 96) -> dict:
     """
@@ -138,6 +128,7 @@ def read_energy_history(simulation_id: str, last_n: int = 96) -> dict:
 
 
 # ── Tool 3: update_setpoint ───────────────────────────────────────────────────
+
 
 def update_setpoint(
     simulation_id: str,
@@ -182,6 +173,7 @@ def update_setpoint(
 
 # ── Tool 4: modify_schedule ───────────────────────────────────────────────────
 
+
 def modify_schedule(
     simulation_id: str,
     hour: int,
@@ -191,9 +183,7 @@ def modify_schedule(
     Modify occupancy schedule for a specific hour.
     This affects energy loads in subsequent timesteps.
     """
-    logger.info(
-        f"MCP tool: modify_schedule({simulation_id}) hour={hour}, occ={occupancy_fraction}"
-    )
+    logger.info(f"MCP tool: modify_schedule({simulation_id}) hour={hour}, occ={occupancy_fraction}")
     # In a real system this would write back to EnergyPlus schedule file
     # For mock, we update a global schedule dict
     return {
@@ -206,6 +196,7 @@ def modify_schedule(
 
 
 # ── Tool 5: run_simulation_step ───────────────────────────────────────────────
+
 
 def run_simulation_step(simulation_id: str, steps: int = 1) -> dict:
     """
@@ -226,6 +217,7 @@ def run_simulation_step(simulation_id: str, steps: int = 1) -> dict:
 
 # ── Tool 6: restart_simulation ────────────────────────────────────────────────
 
+
 def restart_simulation(simulation_id: str, mode: str = "mock") -> dict:
     """
     Stop and restart a simulation from the beginning.
@@ -245,6 +237,7 @@ def restart_simulation(simulation_id: str, mode: str = "mock") -> dict:
 
 # ── Tool 7: generate_dashboard ────────────────────────────────────────────────
 
+
 def generate_dashboard(
     simulation_id: str,
     output_path: str = "outputs/dashboard.html",
@@ -255,6 +248,7 @@ def generate_dashboard(
     logger.info(f"MCP tool: generate_dashboard({simulation_id})")
     try:
         from app.dashboard.dashboard import generate_dashboard as _gen
+
         result_path = _gen(simulation_id=simulation_id, output_path=output_path)
         return DashboardOutput(
             success=True,
@@ -272,6 +266,7 @@ def generate_dashboard(
 
 # ── Tool 8: save_report ───────────────────────────────────────────────────────
 
+
 def save_report(
     simulation_id: str,
     format: str = "markdown",
@@ -284,6 +279,7 @@ def save_report(
     logger.info(f"MCP tool: save_report({simulation_id}, format={format})")
     try:
         from app.dashboard.reporter import generate_report
+
         out = generate_report(simulation_id=simulation_id, fmt=format, output_path=output_path)
         return ReportOutput(
             success=True,

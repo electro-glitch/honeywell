@@ -14,11 +14,10 @@ from __future__ import annotations
 
 import math
 from datetime import datetime, timedelta
-from typing import Optional
 
 from loguru import logger
 
-from app.config import get_config, PricingConfig, CarbonConfig
+from app.config import CarbonConfig, PricingConfig, get_config
 from app.database.models import BuildingMetrics, ComfortViolation
 from app.database.repository import insert_metrics, insert_violation
 from app.energyplus.wrapper import BaseSimulation, SimulationState
@@ -36,9 +35,9 @@ class MetricsCollector:
         simulation_id: str,
         mode: str,
         dt_hours: float,
-        pricing: Optional[PricingConfig] = None,
-        carbon: Optional[CarbonConfig] = None,
-        start_datetime: Optional[datetime] = None,
+        pricing: PricingConfig | None = None,
+        carbon: CarbonConfig | None = None,
+        start_datetime: datetime | None = None,
     ) -> None:
         self.sim = simulation
         self.simulation_id = simulation_id
@@ -47,7 +46,9 @@ class MetricsCollector:
         self._pricing = pricing or get_config().pricing
         self._carbon = carbon or get_config().carbon
         self._comfort = get_config().simulation.comfort
-        self._start_dt = start_datetime or datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        self._start_dt = start_datetime or datetime.utcnow().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
     def __call__(self, state: SimulationState) -> None:
         """Called by the simulation engine every timestep."""
@@ -172,11 +173,12 @@ class MetricsCollector:
 
 # ── PMV / PPD Calculations ────────────────────────────────────────────────────
 
+
 def compute_pmv(
     air_temp_c: float,
     relative_humidity: float,
     occupancy: float = 1.0,
-    mean_radiant_temp: Optional[float] = None,
+    mean_radiant_temp: float | None = None,
     air_velocity_m_s: float = 0.1,
     metabolic_rate: float = 1.2,
     clothing_insulation: float = 0.5,
@@ -191,7 +193,7 @@ def compute_pmv(
     tr = mean_radiant_temp if mean_radiant_temp is not None else ta + 2.0
     va = air_velocity_m_s
     rh = relative_humidity
-    M = metabolic_rate   # met
+    M = metabolic_rate  # met
     Icl = clothing_insulation  # clo
 
     # Clothing surface area factor
@@ -217,10 +219,9 @@ def compute_pmv(
     S = M * 58.15  # Metabolic rate (W/m²)
 
     # PMV formula (simplified linear approximation)
-    pmv = (
-        0.303 * math.exp(-0.036 * S) + 0.028
-    ) * (
-        S - W
+    pmv = (0.303 * math.exp(-0.036 * S) + 0.028) * (
+        S
+        - W
         - 3.05e-3 * (5733 - 6.99 * (S - W) - pa)
         - 0.42 * ((S - W) - 58.15)
         - 1.7e-5 * S * (5867 - pa)

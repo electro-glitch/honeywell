@@ -5,8 +5,8 @@ Provides an in-memory database, mock simulation, and config overrides.
 
 from __future__ import annotations
 
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
@@ -14,8 +14,8 @@ from app.database.db import init_db
 from app.database.models import BuildingMetrics, ControlDecision, SimulationRun
 from app.energyplus.wrapper import MockSimulation
 
-
 # ── Config ────────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture()
 def tmp_db(tmp_path: Path) -> Path:
@@ -29,9 +29,14 @@ def tmp_db(tmp_path: Path) -> Path:
 def test_config(tmp_path: Path, monkeypatch):
     """Return a minimal test AppConfig pointing at temp directory."""
     from app.config import (
-        AppConfig, SimulationConfig, LLMConfig, DatabaseConfig,
-        OutputConfig, LoggingConfig,
+        AppConfig,
+        DatabaseConfig,
+        LLMConfig,
+        LoggingConfig,
+        OutputConfig,
+        SimulationConfig,
     )
+
     db_path = tmp_path / "test.db"
     out_dir = tmp_path / "outputs"
     out_dir.mkdir()
@@ -66,6 +71,7 @@ def test_config(tmp_path: Path, monkeypatch):
 
     # Patch get_config to return this config everywhere
     import app.database.db as db_mod
+
     monkeypatch.setattr(db_mod, "get_db_path", lambda: db_path)
     init_db(db_path)
 
@@ -74,12 +80,14 @@ def test_config(tmp_path: Path, monkeypatch):
 
 # ── Simulation ────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture()
 def mock_sim(test_config) -> MockSimulation:
     return MockSimulation(test_config.simulation)
 
 
 # ── Sample Data ───────────────────────────────────────────────────────────────
+
 
 @pytest.fixture()
 def sample_metrics() -> BuildingMetrics:

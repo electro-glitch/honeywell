@@ -8,10 +8,6 @@ Implements a sliding window of recent decisions with analysis.
 from __future__ import annotations
 
 from collections import deque
-from datetime import datetime
-from typing import Optional
-
-from loguru import logger
 
 from app.database.models import ControlDecision
 

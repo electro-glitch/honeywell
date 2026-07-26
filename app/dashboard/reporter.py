@@ -18,13 +18,11 @@ Each report includes:
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
-from jinja2 import Environment, BaseLoader
+from jinja2 import BaseLoader, Environment
 from loguru import logger
 
 from app.config import get_config
@@ -35,7 +33,6 @@ from app.database.repository import (
     get_violations_dataframe,
     list_simulation_runs,
 )
-
 
 _REPORT_TEMPLATE_MD = """\
 # Eco-Loop Building Optimization Report
@@ -230,8 +227,8 @@ _REPORT_TEMPLATE_HTML = """\
 def generate_report(
     simulation_id: str,
     fmt: str = "markdown",
-    output_path: Optional[str] = None,
-    baseline_id: Optional[str] = None,
+    output_path: str | None = None,
+    baseline_id: str | None = None,
 ) -> Path:
     """
     Generate a simulation report.
@@ -261,9 +258,7 @@ def generate_report(
     opt_summary = get_simulation_summary(simulation_id)
     base_summary = get_simulation_summary(baseline_id) if baseline_id else {}
     comparison = (
-        compare_simulations(baseline_id, simulation_id)
-        if baseline_id and simulation_id
-        else {}
+        compare_simulations(baseline_id, simulation_id) if baseline_id and simulation_id else {}
     )
     violations_df = get_violations_dataframe(simulation_id)
     opt_df = get_metrics_dataframe(simulation_id)
@@ -319,22 +314,27 @@ def _build_context(
     # Violation summary
     if not violations_df.empty:
         vc = violations_df["violation_type"].value_counts()
-        violation_summary = "\n".join(
-            f"- **{t}**: {c} occurrence(s)" for t, c in vc.items()
-        )
+        violation_summary = "\n".join(f"- **{t}**: {c} occurrence(s)" for t, c in vc.items())
     else:
         violation_summary = ""
 
     # Recommendations
     recommendations = _generate_recommendations(
-        savings_pct, violations, opt_summary.get("avg_pmv", 0),
-        opt_summary.get("avg_temp_c", 23), violations_df
+        savings_pct,
+        violations,
+        opt_summary.get("avg_pmv", 0),
+        opt_summary.get("avg_temp_c", 23),
+        violations_df,
     )
 
     # Executive summary (rule-based NLG)
     executive_summary = _generate_executive_summary(
-        savings_pct, savings_kwh, comparison.get("cost_savings", 0),
-        violations, comfort_score, opt_summary.get("avg_pmv", 0),
+        savings_pct,
+        savings_kwh,
+        comparison.get("cost_savings", 0),
+        violations,
+        comfort_score,
+        opt_summary.get("avg_pmv", 0),
     )
 
     # Get simulation run details
@@ -467,16 +467,18 @@ def _generate_recommendations(
             "demand-controlled ventilation (DCV) system."
         )
 
-    recs.extend([
-        "Integrate real-time weather forecast data to enable predictive pre-conditioning "
-        "and further reduce peak demand.",
-        "Enable dynamic electricity pricing integration for time-of-use optimization, "
-        "shifting controllable loads to off-peak hours.",
-        "Consider adding occupancy sensors for more accurate real-time occupancy detection "
-        "rather than relying on schedule-based estimation.",
-        "Review lighting control strategy — automated daylight-responsive dimming can "
-        "reduce lighting energy by 30–50% in perimeter zones.",
-    ])
+    recs.extend(
+        [
+            "Integrate real-time weather forecast data to enable predictive pre-conditioning "
+            "and further reduce peak demand.",
+            "Enable dynamic electricity pricing integration for time-of-use optimization, "
+            "shifting controllable loads to off-peak hours.",
+            "Consider adding occupancy sensors for more accurate real-time occupancy detection "
+            "rather than relying on schedule-based estimation.",
+            "Review lighting control strategy — automated daylight-responsive dimming can "
+            "reduce lighting energy by 30–50% in perimeter zones.",
+        ]
+    )
 
     return recs
 

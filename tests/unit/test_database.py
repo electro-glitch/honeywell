@@ -5,28 +5,27 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-import pytest
-
-from app.database.db import get_db_path, init_db
-from app.database.models import BuildingMetrics, ControlDecision, SimulationRun
+from app.database.db import init_db
+from app.database.models import BuildingMetrics, ControlDecision
 from app.database.repository import (
     create_simulation_run,
     get_latest_metrics,
     get_metrics_history,
+    get_recent_decisions,
     get_simulation_run,
     get_simulation_summary,
     insert_decision,
     insert_metrics,
     update_simulation_run,
-    get_recent_decisions,
 )
 
-
 # All tests use the conftest test_config fixture which monkeypatches get_db_path
+
 
 class TestDatabaseInit:
     def test_init_creates_tables(self, test_config, tmp_path: Path) -> None:
         import sqlite3
+
         db_path = test_config.resolve(test_config.database.path)
         with sqlite3.connect(str(db_path)) as conn:
             tables = {

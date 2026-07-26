@@ -10,7 +10,6 @@ These are used for:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -21,7 +20,7 @@ class BuildingMetrics(BaseModel):
     All energy values in kWh unless noted.
     """
 
-    id: Optional[int] = None
+    id: int | None = None
     simulation_id: str = Field(..., description="Unique simulation run identifier")
     mode: str = Field(..., description="'baseline' or 'optimized'")
     timestep: int = Field(..., description="Simulation timestep index (0-based)")
@@ -84,7 +83,7 @@ class ControlDecision(BaseModel):
     A control decision produced by the LLM decision engine.
     """
 
-    id: Optional[int] = None
+    id: int | None = None
     simulation_id: str
     timestep: int
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -93,20 +92,20 @@ class ControlDecision(BaseModel):
     cooling_setpoint: float = Field(..., ge=15.0, le=35.0)
     heating_setpoint: float = Field(..., ge=10.0, le=30.0)
     fan_speed: float = Field(..., ge=0.0, le=1.0)
-    airflow_m3s: Optional[float] = Field(default=None, ge=0.0)
+    airflow_m3s: float | None = Field(default=None, ge=0.0)
 
     # Reasoning
     reason: str = Field(..., description="LLM reasoning for this decision")
     llm_model: str = Field(default="llama3")
-    raw_response: Optional[str] = Field(default=None)
+    raw_response: str | None = Field(default=None)
 
     # Validation status
     was_validated: bool = Field(default=True)
-    validation_notes: Optional[str] = None
+    validation_notes: str | None = None
 
     # Bonus: carbon-aware data
-    carbon_intensity_g_kwh: Optional[float] = None
-    electricity_price_per_kwh: Optional[float] = None
+    carbon_intensity_g_kwh: float | None = None
+    electricity_price_per_kwh: float | None = None
 
     class Config:
         from_attributes = True
@@ -117,19 +116,19 @@ class SimulationRun(BaseModel):
     Metadata about a simulation run.
     """
 
-    id: Optional[int] = None
+    id: int | None = None
     simulation_id: str
     mode: str  # "baseline" | "optimized"
     started_at: datetime = Field(default_factory=datetime.utcnow)
-    ended_at: Optional[datetime] = None
+    ended_at: datetime | None = None
     total_timesteps: int = Field(default=0)
     total_energy_kwh: float = Field(default=0.0)
     total_cost: float = Field(default=0.0)
     total_carbon_kg: float = Field(default=0.0)
     avg_pmv: float = Field(default=0.0)
     comfort_violations: int = Field(default=0)
-    llm_model: Optional[str] = None
-    config_snapshot: Optional[str] = None  # JSON string
+    llm_model: str | None = None
+    config_snapshot: str | None = None  # JSON string
 
     class Config:
         from_attributes = True
@@ -140,7 +139,7 @@ class ComfortViolation(BaseModel):
     Record of a comfort constraint violation.
     """
 
-    id: Optional[int] = None
+    id: int | None = None
     simulation_id: str
     timestep: int
     timestamp: datetime = Field(default_factory=datetime.utcnow)

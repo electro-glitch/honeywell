@@ -4,19 +4,20 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.agent.llm_client import StubLLMClient, extract_json, LLMError
+from app.agent.llm_client import LLMError, StubLLMClient, extract_json
 from app.agent.memory import DecisionMemory
-from app.agent.prompts import build_decision_prompt, SYSTEM_PROMPT
+from app.agent.prompts import SYSTEM_PROMPT, build_decision_prompt
 from app.database.models import ControlDecision
 
 
 class TestExtractJSON:
     def test_plain_json(self):
-        text = '{"cooling_setpoint": 24.0, "heating_setpoint": 20.0, "fan_speed": 0.7, "reason": "ok"}'
+        text = (
+            '{"cooling_setpoint": 24.0, "heating_setpoint": 20.0, "fan_speed": 0.7, "reason": "ok"}'
+        )
         data = extract_json(text)
         assert data["cooling_setpoint"] == 24.0
 
@@ -44,7 +45,9 @@ class TestStubLLMClient:
         self.client = StubLLMClient()
 
     def test_high_pmv_reduces_cooling(self):
-        prompt = "Indoor Temperature: 26.0°C\nPMV (Comfort Index): 0.8\nOccupancy: 80%\nCO₂: 650 ppm"
+        prompt = (
+            "Indoor Temperature: 26.0°C\nPMV (Comfort Index): 0.8\nOccupancy: 80%\nCO₂: 650 ppm"
+        )
         response = self.client.generate(prompt)
         data = json.loads(response)
         # High PMV → cooling should be lower than default
@@ -60,14 +63,18 @@ class TestStubLLMClient:
         assert data["fan_speed"] <= 0.4
 
     def test_high_co2_increases_fan(self):
-        prompt = "Indoor Temperature: 23.0°C\nPMV (Comfort Index): 0.1\nOccupancy: 70%\nCO₂: 950 ppm"
+        prompt = (
+            "Indoor Temperature: 23.0°C\nPMV (Comfort Index): 0.1\nOccupancy: 70%\nCO₂: 950 ppm"
+        )
         response = self.client.generate(prompt)
         data = json.loads(response)
         # High CO₂ → fan speed should increase
         assert data["fan_speed"] >= 0.5
 
     def test_output_has_required_fields(self):
-        response = self.client.generate("Indoor Temperature: 22.0°C\nPMV (Comfort Index): 0.0\nOccupancy: 50%\nCO₂: 500 ppm")
+        response = self.client.generate(
+            "Indoor Temperature: 22.0°C\nPMV (Comfort Index): 0.0\nOccupancy: 50%\nCO₂: 500 ppm"
+        )
         data = json.loads(response)
         for field in ["cooling_setpoint", "heating_setpoint", "fan_speed", "reason"]:
             assert field in data

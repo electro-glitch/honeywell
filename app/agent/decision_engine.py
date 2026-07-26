@@ -21,16 +21,21 @@ from __future__ import annotations
 import json
 import time
 from datetime import datetime
-from typing import Optional
 
 from loguru import logger
 
-from app.agent.llm_client import LLMError, OllamaClient, StubLLMClient, create_llm_client, extract_json
+from app.agent.llm_client import (
+    LLMError,
+    OllamaClient,
+    StubLLMClient,
+    create_llm_client,
+    extract_json,
+)
 from app.agent.memory import DecisionMemory
 from app.agent.prompts import SELF_CORRECTION_PROMPT, SYSTEM_PROMPT, build_decision_prompt
 from app.config import LLMConfig, get_config
 from app.database.models import ControlDecision
-from app.database.repository import get_energy_history, get_latest_metrics, insert_decision
+from app.database.repository import insert_decision
 from app.mcp.server import call_tool_direct
 
 
@@ -45,15 +50,15 @@ class DecisionEngine:
     def __init__(
         self,
         simulation_id: str,
-        llm_client: Optional[OllamaClient | StubLLMClient] = None,
-        config: Optional[LLMConfig] = None,
+        llm_client: OllamaClient | StubLLMClient | None = None,
+        config: LLMConfig | None = None,
     ) -> None:
         self.simulation_id = simulation_id
         self._cfg = config or get_config().llm
         self._llm = llm_client or create_llm_client(self._cfg)
         self._memory = DecisionMemory(max_size=self._cfg.memory_size)
         self._step_counter = 0
-        self._last_decision: Optional[ControlDecision] = None
+        self._last_decision: ControlDecision | None = None
         self._total_decisions = 0
         self._failed_decisions = 0
 
@@ -70,7 +75,7 @@ class DecisionEngine:
             return True
         return timestep % self._cfg.query_every_n_steps == 0
 
-    def decide(self, timestep: int) -> Optional[ControlDecision]:
+    def decide(self, timestep: int) -> ControlDecision | None:
         """
         Query LLM for a control decision at the given timestep.
 
@@ -138,7 +143,7 @@ class DecisionEngine:
 
         return decision
 
-    def _query_with_retry(self, prompt: str) -> Optional[dict]:
+    def _query_with_retry(self, prompt: str) -> dict | None:
         """Query the LLM with up to max_attempts retries for valid JSON."""
         max_attempts = self._cfg.max_attempts
 
@@ -149,8 +154,7 @@ class DecisionEngine:
                 else:
                     # Self-correction: send the invalid response back with guidance
                     correction_prompt = (
-                        f"{prompt}\n\n"
-                        f"Previous response was invalid. {SELF_CORRECTION_PROMPT}"
+                        f"{prompt}\n\nPrevious response was invalid. {SELF_CORRECTION_PROMPT}"
                     )
                     text = self._llm.generate(prompt=correction_prompt, system=SYSTEM_PROMPT)
 
@@ -164,7 +168,7 @@ class DecisionEngine:
                     return data
                 else:
                     missing = required - data.keys()
-                    logger.warning(f"LLM JSON missing fields: {missing} (attempt {attempt+1})")
+                    logger.warning(f"LLM JSON missing fields: {missing} (attempt {attempt + 1})")
 
             except LLMError as e:
                 logger.warning(f"LLM attempt {attempt + 1}/{max_attempts} failed: {e}")
@@ -177,7 +181,7 @@ class DecisionEngine:
         self,
         data: dict,
         timestep: int,
-    ) -> Optional[ControlDecision]:
+    ) -> ControlDecision | None:
         """
         Build a ControlDecision from raw LLM output.
         Validates ranges before constructing the model.

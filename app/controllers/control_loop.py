@@ -19,13 +19,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 from loguru import logger
 from rich.console import Console
-from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
@@ -36,7 +33,6 @@ from rich.progress import (
     TimeElapsedColumn,
     TimeRemainingColumn,
 )
-from rich.table import Table
 
 from app.agent.decision_engine import DecisionEngine
 from app.config import AppConfig, get_config
@@ -69,16 +65,16 @@ class OptimizationLoop:
     def __init__(
         self,
         mode: str = "optimized",
-        simulation_id: Optional[str] = None,
-        config: Optional[AppConfig] = None,
+        simulation_id: str | None = None,
+        config: AppConfig | None = None,
     ) -> None:
         self.mode = mode
         self.simulation_id = simulation_id or f"{mode}_{uuid.uuid4().hex[:8]}"
         self.config = config or get_config()
-        self._sim: Optional[BaseSimulation] = None
-        self._engine: Optional[DecisionEngine] = None
-        self._actuator: Optional[ActuatorController] = None
-        self._run_record: Optional[SimulationRun] = None
+        self._sim: BaseSimulation | None = None
+        self._engine: DecisionEngine | None = None
+        self._actuator: ActuatorController | None = None
+        self._run_record: SimulationRun | None = None
         self._step_count = 0
 
         # Ensure output dirs exist
@@ -87,9 +83,7 @@ class OptimizationLoop:
         # Initialise database
         init_db()
 
-        logger.info(
-            f"OptimizationLoop created — mode={mode}, id={self.simulation_id}"
-        )
+        logger.info(f"OptimizationLoop created — mode={mode}, id={self.simulation_id}")
 
     def run(self) -> str:
         """
@@ -133,9 +127,7 @@ class OptimizationLoop:
             self._sim.register_timestep_callback(self._baseline_callback)
 
         # Run with progress display
-        total_steps = (
-            self.config.simulation.total_hours * self.config.simulation.timesteps_per_hour
-        )
+        total_steps = self.config.simulation.total_hours * self.config.simulation.timesteps_per_hour
         self._display_run(total_steps)
 
         # Finalise
@@ -230,7 +222,6 @@ class OptimizationLoop:
                 f"energy={summary.get('total_energy_kwh', 0):.2f} kWh"
             )
 
-
         # Export CSV
         self._export_csv()
 
@@ -257,7 +248,7 @@ class OptimizationLoop:
 
 
 def run_comparison(
-    config: Optional[AppConfig] = None,
+    config: AppConfig | None = None,
 ) -> tuple[str, str]:
     """
     Run both baseline and optimized simulations sequentially,
